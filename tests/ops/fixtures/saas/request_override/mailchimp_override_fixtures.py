@@ -13,7 +13,7 @@ from fides.api.ops.models.datasetconfig import DatasetConfig
 from fides.api.ops.schemas.saas.saas_config import SaaSRequest
 from fides.api.ops.schemas.saas.shared_schemas import HTTPMethod, SaaSRequestParams
 from fides.api.ops.service.connectors.saas_connector import SaaSConnector
-from fides.api.ops.util.saas_util import load_config
+from fides.api.ops.util.saas_util import load_config, load_datasets
 from fides.lib.db import session
 from tests.ops.fixtures.application_fixtures import load_dataset
 
@@ -27,7 +27,7 @@ def mailchimp_override_config() -> Dict[str, Any]:
 
 @pytest.fixture
 def mailchimp_override_dataset() -> Dict[str, Any]:
-    return load_dataset(
+    return load_datasets(
         "data/saas/dataset/request_override/mailchimp_override_dataset.yml"
     )[0]
 

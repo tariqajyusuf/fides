@@ -283,7 +283,7 @@ def instantiate_connection_from_template(
     fields are provided, persists the associated connection config and dataset to the database.
     """
 
-    registry: ConnectorRegistry = load_registry(registry_file)
+    registry: ConnectorRegistry = load_registry()
     connector_template: Optional[ConnectorTemplate] = registry.get_connector_template(
         saas_connector_type
     )

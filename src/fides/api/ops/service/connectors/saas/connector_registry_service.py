@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from os.path import exists
 from typing import Dict, Iterable, List, Optional, Union
 
 from loguru import logger
@@ -15,6 +14,7 @@ from fides.api.ops.models.connectionconfig import (
     ConnectionConfig,
     ConnectionType,
 )
+from fides.api.ops.models.custom_connector_template import CustomConnectorTemplate
 from fides.api.ops.models.datasetconfig import DatasetConfig
 from fides.api.ops.schemas.connection_configuration.connection_config import (
     SaasConnectionTemplateValues,
@@ -22,10 +22,11 @@ from fides.api.ops.schemas.connection_configuration.connection_config import (
 from fides.api.ops.schemas.dataset import FidesopsDataset
 from fides.api.ops.schemas.saas.saas_config import SaaSConfig
 from fides.api.ops.util.saas_util import (
-    load_config,
-    load_config_with_replacement,
-    load_dataset,
-    load_dataset_with_replacement,
+    load_config_from_string,
+    load_dataset_from_string,
+    load_yaml_as_string,
+    replace_config_placeholders,
+    replace_dataset_placeholders,
 )
 
 _registry: Optional[ConnectorRegistry] = None
@@ -34,8 +35,7 @@ registry_file = "data/saas/saas_connector_registry.toml"
 
 class ConnectorTemplate(BaseModel):
     """
-    A collection of paths to artifacts that make up
-    a complete SaaS connector (SaaS config, dataset, etc.)
+    A collection of artifacts that make up a complete SaaS connector (SaaS config, dataset, etc.)
     """
 
     config: str
@@ -45,32 +45,25 @@ class ConnectorTemplate(BaseModel):
 
     @validator("config")
     def validate_config(cls, config: str) -> str:
-        """Validates the config at the given path"""
-        SaaSConfig(**load_config(config))
+        """Validates the config"""
+        SaaSConfig(**load_config_from_string(config))
         return config
 
     @validator("dataset")
     def validate_dataset(cls, dataset: str) -> str:
         """Validates the dataset at the given path"""
-        FidesopsDataset(**load_dataset(dataset)[0])
+        FidesopsDataset(**load_dataset_from_string(dataset))
         return dataset
-
-    @validator("icon")
-    def validate_icon(cls, icon: str) -> str:
-        """Validates the icon at the given path"""
-        if not exists(icon):
-            raise ValueError(f"Icon file {icon} was not found")
-        return icon
 
 
 class ConnectorRegistry(BaseModel):
     """A map of SaaS connector templates"""
 
-    __root__: Dict[str, ConnectorTemplate]
+    registry: Dict[str, ConnectorTemplate] = {}
 
     def connector_types(self) -> List[str]:
         """List of registered SaaS connector types"""
-        return list(self.__root__)
+        return list(self.registry)
 
     def get_connector_template(
         self, connector_type: str
@@ -78,7 +71,12 @@ class ConnectorRegistry(BaseModel):
         """
         Returns an object containing the references to the various SaaS connector artifacts
         """
-        return self.__root__.get(connector_type)
+        return self.registry.get(connector_type)
+
+    def register_template(
+        self, connector_type: str, template: ConnectorTemplate
+    ) -> None:
+        self.registry[connector_type] = template
 
 
 def create_connection_config_from_template_no_save(
@@ -89,7 +87,7 @@ def create_connection_config_from_template_no_save(
     """Creates a SaaS connection config from a template without saving it."""
     # Load saas config from template and replace every instance of "<instance_fides_key>" with the fides_key
     # the user has chosen
-    config_from_template: Dict = load_config_with_replacement(
+    config_from_template: Dict = replace_config_placeholders(
         template.config, "<instance_fides_key>", template_values.instance_key
     )
 
@@ -123,9 +121,10 @@ def upsert_dataset_config_from_template(
     """
     # Load the dataset config from template and replace every instance of "<instance_fides_key>" with the fides_key
     # the user has chosen
-    dataset_from_template: Dict = load_dataset_with_replacement(
+    dataset_from_template: Dict = replace_dataset_placeholders(
         template.dataset, "<instance_fides_key>", template_values.instance_key
-    )[0]
+    )
+
     data = {
         "connection_config_id": connection_config.id,
         "fides_key": template_values.instance_key,
@@ -135,15 +134,38 @@ def upsert_dataset_config_from_template(
     return dataset_config
 
 
-def load_registry(config_file: str) -> ConnectorRegistry:
-    """Loads a SaaS connector registry from the given config file."""
+def load_registry(db: Session = None) -> ConnectorRegistry:
+    """Populates the connector registry with templates specified in the filesystem and the database"""
     global _registry  # pylint: disable=W0603
     if _registry is None:
-        _registry = ConnectorRegistry.parse_obj(load_toml(config_file))
+        _registry = ConnectorRegistry()
+        for connector_type, entry in load_toml(registry_file).items():
+            config = load_yaml_as_string(entry["config"])
+            dataset = load_yaml_as_string(entry["dataset"])
+            _registry.register_template(
+                connector_type,
+                ConnectorTemplate(
+                    config=config,
+                    dataset=dataset,
+                    icon=entry["icon"],
+                    human_readable=entry["human_readable"],
+                ),
+            )
+        if db:
+            for template in CustomConnectorTemplate.all(db=db):
+                _registry.register_template(
+                    template.key,
+                    ConnectorTemplate(
+                        config=template.config,
+                        dataset=template.dataset,
+                        icon=template.icon,
+                        human_readable=template.name,
+                    ),
+                )
     return _registry
 
 
-def update_saas_configs(registry: ConnectorRegistry, db: Session) -> None:
+def update_saas_configs(db: Session) -> None:
     """
     Updates SaaS config instances currently in the DB if to the
     corresponding template in the registry are found.
@@ -151,17 +173,18 @@ def update_saas_configs(registry: ConnectorRegistry, db: Session) -> None:
     Effectively an "update script" for SaaS config instances,
     to be run on server bootstrap.
     """
-    for connector_type in registry.connector_types():
+    assert _registry, "SaaS connector template registry has not been loaded"
+    for connector_type in _registry.connector_types():
         logger.debug(
             "Determining if any updates are needed for connectors of type {} based on templates...",
             connector_type,
         )
-        template: ConnectorTemplate = registry.get_connector_template(  # type: ignore
+        template: ConnectorTemplate = _registry.get_connector_template(  # type: ignore
             connector_type
         )
-        saas_config_template = SaaSConfig.parse_obj(load_config(template.config))
+        saas_config = SaaSConfig(**load_config_from_string(template.config))
         template_version: Union[LegacyVersion, Version] = parse_version(
-            saas_config_template.version
+            saas_config.version
         )
 
         connection_configs: Iterable[ConnectionConfig] = ConnectionConfig.filter(
@@ -212,7 +235,7 @@ def update_saas_instance(
         instance_key=saas_config_instance.fides_key,
     )
 
-    config_from_template: Dict = load_config_with_replacement(
+    config_from_template: Dict = replace_config_placeholders(
         template.config, "<instance_fides_key>", template_vals.instance_key
     )
 

@@ -27,7 +27,7 @@ from fides.api.ops.service.masking.strategy.masking_strategy_string_rewrite impo
     StringRewriteMaskingStrategy,
 )
 from fides.api.ops.util.data_category import DataCategory
-from fides.api.ops.util.saas_util import load_config
+from fides.api.ops.util.saas_util import load_config, load_datasets
 from fides.lib.models.client import ClientDetail
 from tests.ops.fixtures.application_fixtures import load_dataset
 
@@ -63,12 +63,12 @@ def saas_external_example_config() -> Dict:
 
 @pytest.fixture
 def saas_example_dataset() -> Dict:
-    return load_dataset("data/saas/dataset/saas_example_dataset.yml")[0]
+    return load_datasets("data/saas/dataset/saas_example_dataset.yml")[0]
 
 
 @pytest.fixture
 def saas_external_example_dataset() -> Dict:
-    return load_dataset("data/saas/dataset/saas_example_dataset.yml")[1]
+    return load_datasets("data/saas/dataset/saas_example_dataset.yml")[1]
 
 
 @pytest.fixture(scope="function")

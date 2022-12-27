@@ -3,6 +3,7 @@
 # imported by Alembic
 from fides.api.ops.models.authentication_request import AuthenticationRequest
 from fides.api.ops.models.connectionconfig import ConnectionConfig
+from fides.api.ops.models.custom_connector_template import CustomConnectorTemplate
 from fides.api.ops.models.datasetconfig import DatasetConfig
 from fides.api.ops.models.manual_webhook import AccessManualWebhook
 from fides.api.ops.models.messaging import MessagingConfig

@@ -47,7 +47,6 @@ from fides.api.ops.common_exceptions import (
 from fides.api.ops.schemas.analytics import Event, ExtraData
 from fides.api.ops.service.connectors.saas.connector_registry_service import (
     load_registry,
-    registry_file,
     update_saas_configs,
 )
 from fides.api.ops.tasks.scheduled.scheduler import scheduler
@@ -211,9 +210,9 @@ async def setup_server() -> None:
 
     logger.info("Validating SaaS connector templates...")
     try:
-        registry = load_registry(registry_file)
         db = get_api_session()
-        update_saas_configs(registry, db)
+        load_registry(db)
+        update_saas_configs(db)
     except Exception as e:
         logger.error(
             "Error occurred during SaaS connector template validation: {}",

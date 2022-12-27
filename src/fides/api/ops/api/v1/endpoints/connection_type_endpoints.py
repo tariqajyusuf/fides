@@ -25,7 +25,6 @@ from fides.api.ops.schemas.saas.saas_config import SaaSConfig
 from fides.api.ops.service.connectors.saas.connector_registry_service import (
     ConnectorRegistry,
     load_registry,
-    registry_file,
 )
 from fides.api.ops.util.oauth_util import verify_oauth_client
 from fides.api.ops.util.saas_util import encode_file_contents, load_config
@@ -69,7 +68,7 @@ def get_connection_types(
             ]
         )
     if system_type == SystemType.saas or system_type is None:
-        registry: ConnectorRegistry = load_registry(registry_file)
+        registry: ConnectorRegistry = load_registry()
         saas_types: List[str] = sorted(
             [
                 saas_type

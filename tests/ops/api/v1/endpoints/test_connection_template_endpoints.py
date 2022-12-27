@@ -37,7 +37,7 @@ class TestGetConnections:
 
     @pytest.fixture(scope="session")
     def saas_template_registry(self):
-        return load_registry(registry_file)
+        return load_registry()
 
     def test_get_connection_types_not_authenticated(self, api_client, url):
         resp = api_client.get(url, headers={})
