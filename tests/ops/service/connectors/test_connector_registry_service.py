@@ -3,12 +3,19 @@ from unittest import mock
 from unittest.mock import Mock
 
 import yaml
+from sqlalchemy.orm import Session
 
 from fides.api.ops.models.datasetconfig import DatasetConfig
+from fides.api.ops.service.authentication import authentication_strategy_factory
 from fides.api.ops.service.connectors.saas.connector_registry_service import (
     ConnectorTemplate,
     load_registry,
+    register_custom_functions,
     update_saas_configs,
+)
+from fides.api.ops.service.saas_request.saas_request_override_factory import (
+    SaaSRequestOverrideFactory,
+    SaaSRequestType,
 )
 from fides.api.ops.util.saas_util import (
     load_config_from_string,
@@ -40,8 +47,8 @@ NEW_COLLECTION = {
 
 
 class TestConnectionRegistry:
-    def test_get_connector_template(self):
-        registry = load_registry()
+    def test_get_connector_template(self, db: Session):
+        registry = load_registry(db=db)
 
         assert "mailchimp" in registry.connector_types()
 
@@ -120,6 +127,112 @@ class TestConnectionRegistry:
             tertiary_mailchimp_instance,
             secondary_sendgrid_instance,
         )
+
+
+class TestCustomFunctionLoading:
+    def test_load_custom_override_functions(self):
+        script = """
+from json import dumps
+from typing import Any, Dict, List
+
+from requests import put
+
+from fides.api.ops.common_exceptions import (
+    ClientUnsuccessfulException,
+    ConnectionException,
+)
+from fides.api.ops.models.policy import Policy
+from fides.api.ops.models.privacy_request import PrivacyRequest
+from fides.api.ops.service.saas_request.saas_request_override_factory import (
+    SaaSRequestType,
+    register,
+)
+from fides.api.ops.util.saas_util import PRIVACY_REQUEST_ID
+from fides.core.config import get_config
+
+CONFIG = get_config()
+
+@register("momo_user_update", [SaaSRequestType.UPDATE])
+def momo_user_update(
+    param_values_per_row: List[Dict[str, Any]],
+    policy: Policy,
+    privacy_request: PrivacyRequest,
+    secrets: Dict[str, Any],
+) -> int:
+    rows_updated: int = 0
+    return rows_updated
+        """
+        register_custom_functions(script)
+        custom_function: Callable = SaaSRequestOverrideFactory.get_override(
+            "momo_user_update", SaaSRequestType.UPDATE
+        )
+        assert custom_function.__name__ == "momo_user_update"
+
+    def test_load_custom_strategy(self):
+        script = '''
+import math
+import time
+from typing import Any, Dict, Optional
+
+import jwt.utils
+from requests import PreparedRequest
+
+from fides.api.ops.models.connectionconfig import ConnectionConfig
+from fides.api.ops.schemas.saas.strategy_configuration import StrategyConfiguration
+from fides.api.ops.service.authentication.authentication_strategy import (
+    AuthenticationStrategy,
+)
+from fides.api.ops.util.saas_util import assign_placeholders
+
+
+class DoorsmashAuthenticationConfiguration(StrategyConfiguration):
+    """
+    Parameters to generate a Doorsmash JWT token
+    """
+
+
+class DoorsmashAuthenticationStrategy(AuthenticationStrategy):
+    """
+    Adds a Doorsmash JWT as bearer auth to the request
+    """
+
+    name = "doorsmash"
+    configuration_model = DoorsmashAuthenticationConfiguration
+
+    def __init__(self, configuration: DoorsmashAuthenticationConfiguration):
+        pass
+
+    def add_authentication(
+        self, request: PreparedRequest, connection_config: ConnectionConfig
+    ) -> PreparedRequest:
+        """
+        Generate a Doorsmash JWT and add it as bearer auth
+        """
+
+        secrets: Optional[Dict[str, Any]] = connection_config.secrets
+
+        token = jwt.encode(
+            {
+                "aud": "doorsmash",
+                "iss": assign_placeholders(self.developer_id, secrets)
+                if secrets
+                else None,
+                "kid": assign_placeholders(self.key_id, secrets) if secrets else None,
+                "exp": str(math.floor(time.time() + 60)),
+                "iat": str(math.floor(time.time())),
+            },
+            jwt.utils.base64url_decode(
+                assign_placeholders(self.signing_secret, secrets)  # type: ignore
+            ),
+            algorithm="HS256",
+            headers={"dd-ver": "DD-JWT-V1"},
+        )
+
+        request.headers["Authorization"] = f"Bearer {token}"
+        return request  
+'''
+        register_custom_functions(script)
+        assert "doorsmash" in authentication_strategy_factory.get_strategy_names()
 
 
 def update_config(

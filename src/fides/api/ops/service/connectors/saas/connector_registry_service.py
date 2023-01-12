@@ -1,6 +1,7 @@
-from __future__ import annotations
-
-from typing import Dict, Iterable, List, Optional, Union
+from importlib.abc import Loader
+from importlib.util import module_from_spec, spec_from_loader
+from types import ModuleType
+from typing import Dict, Iterable, List, Optional, Tuple, Union
 
 from loguru import logger
 from packaging.version import LegacyVersion, Version
@@ -29,7 +30,7 @@ from fides.api.ops.util.saas_util import (
     replace_dataset_placeholders,
 )
 
-_registry: Optional[ConnectorRegistry] = None
+_registry: Optional["ConnectorRegistry"] = None
 registry_file = "data/saas/saas_connector_registry.toml"
 
 
@@ -140,6 +141,7 @@ def load_registry(db: Session = None) -> ConnectorRegistry:
     if _registry is None:
         _registry = ConnectorRegistry()
         for connector_type, entry in load_toml(registry_file).items():
+            # register the config and dataset
             config = load_yaml_as_string(entry["config"])
             dataset = load_yaml_as_string(entry["dataset"])
             _registry.register_template(
@@ -151,6 +153,13 @@ def load_registry(db: Session = None) -> ConnectorRegistry:
                     human_readable=entry["human_readable"],
                 ),
             )
+            # register custom functions if available
+            custom_functions = entry.get("custom_functions")
+            if custom_functions:
+                with open(custom_functions) as file:
+                    contents = file.read()
+                    register_custom_functions(contents)
+                    logger.info(f"Loaded custom functions from {file.name}")
         if db:
             for template in CustomConnectorTemplate.all(db=db):
                 _registry.register_template(
@@ -162,6 +171,13 @@ def load_registry(db: Session = None) -> ConnectorRegistry:
                         human_readable=template.name,
                     ),
                 )
+                # register custom functions if available
+                if template.functions:
+                    register_custom_functions(template.functions)
+                    logger.info(
+                        "Loaded custom functions from the custom connector template '%s'",
+                        template.key,
+                    )
     return _registry
 
 
@@ -242,3 +258,30 @@ def update_saas_instance(
     connection_config.update_saas_config(db, SaaSConfig(**config_from_template))
 
     upsert_dataset_config_from_template(db, connection_config, template, template_vals)
+
+
+def register_custom_functions(script: str) -> None:
+    class StringLoader(Loader):
+        """Custom import loader to load code from a string"""
+
+        def __init__(self, source_string: str) -> None:
+            self.source_string = source_string
+
+        def get_code(self, _: str) -> Tuple[str, str, str]:
+            return self.source_string, "<string>", "exec"
+
+        def exec_module(self, module: ModuleType) -> None:
+            exec(self.source_string, module.__dict__)
+
+        def get_filename(self, _: str) -> str:
+            return "<string>"
+
+        def is_package(self, _: str) -> bool:
+            return False
+
+    loader = StringLoader(script)
+
+    module_spec = spec_from_loader("custom_connector_functions", loader)
+    if module_spec:
+        module = module_from_spec(module_spec)
+        loader.exec_module(module)

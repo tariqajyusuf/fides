@@ -1,6 +1,7 @@
 [adobe_campaign]
 config = "data/saas/config/adobe_campaign_config.yml"
 dataset = "data/saas/dataset/adobe_campaign_dataset.yml"
+custom_functions = "data/saas/custom_functions/adobe_campaign_functions.py"
 icon = "data/saas/icon/adobe.svg"
 human_readable = "Adobe Campaign"
 
@@ -19,6 +20,7 @@ human_readable = "Datadog"
 [doordash]
 config = "data/saas/config/doordash_config.yml"
 dataset = "data/saas/dataset/doordash_dataset.yml"
+custom_functions = "data/saas/custom_functions/doordash_functions.py"
 icon = "data/saas/icon/doordash.svg"
 human_readable = "Doordash"
 
@@ -31,6 +33,7 @@ human_readable = "Fullstory"
 [firebase_auth]
 config = "data/saas/config/firebase_auth_config.yml"
 dataset = "data/saas/dataset/firebase_auth_dataset.yml"
+custom_functions = "data/saas/custom_functions/firebase_auth_functions.py"
 icon = "data/saas/icon/firebase.svg"
 human_readable = "Firebase Auth"
 
@@ -103,6 +106,7 @@ human_readable = "Stripe"
 [twilio_conversations]
 config = "data/saas/config/twilio_conversations_config.yml"
 dataset = "data/saas/dataset/twilio_conversations_dataset.yml"
+custom_functions = "data/saas/custom_functions/twilio_conversations_functions.py"
 icon = "data/saas/icon/twilio.svg"
 human_readable = "Twilio Conversations"
 
@@ -127,6 +131,7 @@ human_readable = "Braze"
 [domo]
 config = "data/saas/config/domo_config.yml"
 dataset = "data/saas/dataset/domo_dataset.yml"
+custom_functions = "data/saas/custom_functions/domo_functions.py"
 icon = "data/saas/icon/domo.svg"
 human_readable = "Domo"
 

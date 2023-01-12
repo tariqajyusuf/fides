@@ -1,6 +1,10 @@
-from typing import Optional
+import io
+import zipfile
+from io import BytesIO
+from typing import Any, Dict, Optional
+from zipfile import BadZipFile, ZipFile
 
-from fastapi import Depends, HTTPException
+from fastapi import Depends, File, HTTPException, UploadFile
 from fastapi.params import Security
 from loguru import logger
 from sqlalchemy.orm import Session
@@ -17,6 +21,7 @@ from fides.api.ops.api import deps
 from fides.api.ops.api.v1.endpoints.connection_endpoints import validate_secrets
 from fides.api.ops.api.v1.scope_registry import (
     CONNECTION_AUTHORIZE,
+    CONNECTOR_TEMPLATE_REGISTER,
     SAAS_CONFIG_CREATE_OR_UPDATE,
     SAAS_CONFIG_DELETE,
     SAAS_CONFIG_READ,
@@ -25,6 +30,7 @@ from fides.api.ops.api.v1.scope_registry import (
 from fides.api.ops.api.v1.urn_registry import (
     AUTHORIZE,
     CONNECTION_TYPES,
+    REGISTER_CONNECTOR_TEMPLATE,
     SAAS_CONFIG,
     SAAS_CONFIG_VALIDATE,
     SAAS_CONNECTOR_FROM_TEMPLATE,
@@ -32,11 +38,13 @@ from fides.api.ops.api.v1.urn_registry import (
 )
 from fides.api.ops.common_exceptions import FidesopsException
 from fides.api.ops.models.connectionconfig import ConnectionConfig, ConnectionType
+from fides.api.ops.models.custom_connector_template import CustomConnectorTemplate
 from fides.api.ops.models.datasetconfig import DatasetConfig
 from fides.api.ops.schemas.connection_configuration.connection_config import (
     SaasConnectionTemplateResponse,
     SaasConnectionTemplateValues,
 )
+from fides.api.ops.schemas.dataset import FidesopsDataset
 from fides.api.ops.schemas.saas.saas_config import (
     SaaSConfig,
     SaaSConfigValidationDetails,
@@ -54,11 +62,15 @@ from fides.api.ops.service.connectors.saas.connector_registry_service import (
     ConnectorTemplate,
     create_connection_config_from_template_no_save,
     load_registry,
-    registry_file,
+    register_custom_functions,
     upsert_dataset_config_from_template,
 )
 from fides.api.ops.util.api_router import APIRouter
 from fides.api.ops.util.oauth_util import verify_oauth_client
+from fides.api.ops.util.saas_util import (
+    load_config_from_string,
+    load_dataset_from_string,
+)
 from fides.lib.exceptions import KeyOrNameAlreadyExists
 
 router = APIRouter(tags=["SaaS Configs"], prefix=V1_URL_PREFIX)
@@ -337,3 +349,65 @@ def instantiate_connection_from_template(
     return SaasConnectionTemplateResponse(
         connection=connection_config, dataset=dataset_config.dataset
     )
+
+
+@router.post(
+    REGISTER_CONNECTOR_TEMPLATE,
+    dependencies=[Security(verify_oauth_client, scopes=[CONNECTOR_TEMPLATE_REGISTER])],
+)
+async def register_custom_connector_template(
+    connector_template: UploadFile,
+    db: Session = Depends(deps.get_db),
+) -> None:
+    """
+    Accepts a connector template bundle, a zip file containing a
+    SaaS config, dataset, and other files used to define a connector template
+
+    The steps to register a connector template are as follows:
+
+    1) Iterate through each file inside the zip file and look for certain files by name
+    2) Persist the template to the database in the custom connector template table
+    3) Register the template in the connector registry for immediate use
+
+    On server startup, the connector registry will load all the connectors defined in this repo
+    along with all the custom connector templates defined in the database
+    """
+    contents = await connector_template.read()
+    zip_file = BytesIO(contents)
+
+    # # Open the file as a zip file
+    try:
+        with zipfile.ZipFile(zip_file, "r") as zip_obj:
+            # Iterate over the entries in the zip file
+            for info in zip_obj.infolist():
+                file_contents = zip_obj.read(info).decode()
+                if info.filename.endswith("config.yml"):
+                    config_contents = file_contents
+                elif info.filename.endswith("dataset.yml"):
+                    dataset_contents = file_contents
+                elif info.filename.endswith("functions.py"):
+                    function_contents = file_contents
+
+            saas_config = SaaSConfig(**load_config_from_string(config_contents))
+            template = CustomConnectorTemplate(
+                key=saas_config.type,
+                name=saas_config.name,
+                config=config_contents,
+                dataset=dataset_contents,
+                icon=None,
+                functions=function_contents,
+            )
+            template.save(db=db)
+            registry = load_registry(db=db)
+            registry.register_template(
+                saas_config.type,
+                ConnectorTemplate(
+                    config=config_contents,
+                    dataset=dataset_contents,
+                    icon=None,
+                    human_readable=saas_config.name,
+                ),
+            )
+            register_custom_functions(function_contents)
+    except zipfile.BadZipFile:
+        raise HTTPException(status_code=400, detail="Invalid zip file")

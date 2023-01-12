@@ -10,12 +10,14 @@ from starlette.testclient import TestClient
 from fides.api.ops.api.v1.scope_registry import (
     CLIENT_READ,
     CONNECTION_AUTHORIZE,
+    CONNECTOR_TEMPLATE_REGISTER,
     SAAS_CONFIG_CREATE_OR_UPDATE,
     SAAS_CONFIG_DELETE,
     SAAS_CONFIG_READ,
 )
 from fides.api.ops.api.v1.urn_registry import (
     AUTHORIZE,
+    REGISTER_CONNECTOR_TEMPLATE,
     SAAS_CONFIG,
     SAAS_CONFIG_VALIDATE,
     V1_URL_PREFIX,
@@ -452,3 +454,24 @@ class TestAuthorizeConnection:
         response = api_client.get(authorize_url, headers=auth_header)
         assert response.ok
         assert response.text == f'"{authorization_url}"'
+
+
+class TestRegisterConnectorTemplate:
+    @pytest.fixture
+    def register_connector_template_url(self) -> str:
+        return V1_URL_PREFIX + REGISTER_CONNECTOR_TEMPLATE
+
+    def test_register_connector_template(
+        self,
+        api_client: TestClient,
+        register_connector_template_url,
+        generate_auth_header,
+    ):
+        auth_header = generate_auth_header(scopes=[CONNECTOR_TEMPLATE_REGISTER])
+        with open("./tests/ops/api/v1/endpoints/zendesk.zip", "rb") as zip_file:
+            response = api_client.post(
+                register_connector_template_url,
+                headers=auth_header,
+                files={"connector_template": zip_file},
+            )
+            assert response.ok

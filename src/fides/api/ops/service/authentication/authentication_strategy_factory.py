@@ -72,4 +72,4 @@ def get_strategy(
 
 def get_strategy_names() -> List[str]:
     """Returns all supported authentication strategies"""
-    return [s.name for s in SupportedAuthenticationStrategies]
+    return [s.name for s in AuthenticationStrategy.get_strategies()]
