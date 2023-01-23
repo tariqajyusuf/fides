@@ -30,6 +30,7 @@ import { addCommonHeaders } from "~/common/CommonHeaders";
 import { VerificationType } from "~/components/modals/types";
 import { useLocalStorage } from "~/common/hooks";
 import ConsentItemCard from "~/components/ConsentItemCard";
+import { inspectForBrowserIdentities } from "~/common/browser-identities";
 
 const Consent: NextPage = () => {
   const content: any = [];
@@ -128,6 +129,7 @@ const Consent: NextPage = () => {
   const saveUserConsentOptions = useCallback(async () => {
     const headers: Headers = new Headers();
     addCommonHeaders(headers, null);
+    const browserIdentity = inspectForBrowserIdentities();
 
     const body = {
       code: verificationCode,
@@ -141,6 +143,9 @@ const Consent: NextPage = () => {
         data_use: d.fidesDataUseKey,
         executable: d.executable ?? false,
       })),
+      browser_identity: browserIdentity
+        ? { user_id: browserIdentity }
+        : undefined,
     };
 
     const response = await fetch(
