@@ -29,6 +29,7 @@ export const NAV_CONFIG: NavConfigGroup[] = [
     routes: [
       { title: "Request manager", path: "/privacy-requests" },
       { title: "Connection manager", path: "/datastore-connection" },
+      { title: "Configuration", path: "/privacy-requests/configure" },
     ],
   },
   {

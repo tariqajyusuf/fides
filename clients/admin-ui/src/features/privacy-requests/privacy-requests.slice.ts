@@ -342,6 +342,63 @@ export const privacyRequestApi = createApi({
       }),
       invalidatesTags: ["Notification"],
     }),
+    getStorageDetails: build.query<any, any>({
+      query: (params) => ({
+        url: `storage/default/${params.storage_type}`,
+      }),
+    }),
+    createActiveStorage: build.mutation<any, any>({
+      query: (params) => ({
+        url: `application/settings`,
+        method: "PUT",
+        body: params,
+      }),
+    }),
+    createStorage: build.mutation<any, any>({
+      query: (params) => ({
+        url: `storage/default`,
+        method: "PUT",
+        body: params,
+      }),
+    }),
+    createStorageSecrets: build.mutation<any, any>({
+      query: (params) => ({
+        url: `storage/default/${params.storage_type}/secret`,
+        method: "PUT",
+        body: params,
+      }),
+    }),
+    createActiveMessagingConfiguration: build.mutation<any, any>({
+      query: (params) => ({
+        url: `application/settings`,
+        method: "PUT",
+        body: params,
+      }),
+    }),
+    getMessagingConfigurationDetails: build.query<any, any>({
+      query: (params) => ({
+        url: `messaging/default/${params.messaging_type}`,
+      }),
+    }),
+    createMessagingConfiguration: build.mutation<any, any>({
+      query: (params) => ({
+        url: `messaging/default/${params.messaging_type}`,
+        method: "PUT",
+        body: params,
+      }),
+    }),
+    createMessagingConfigurationSecrets: build.mutation<any, any>({
+      query: (params) => ({
+        url: `messaging/default/${params.messaging_type}/secret`,
+        method: "PUT",
+        body: params,
+      }),
+    }),
+    getConfigurationSettings: build.query<any, any>({
+      query: () => ({
+        url: `application/settings`,
+      }),
+    }),
     uploadManualWebhookData: build.mutation<
       any,
       PatchUploadManualWebhookDataRequest
@@ -366,4 +423,13 @@ export const {
   useRetryMutation,
   useSaveNotificationMutation,
   useUploadManualWebhookDataMutation,
+  useGetStorageDetailsQuery,
+  useCreateStorageMutation,
+  useCreateStorageSecretsMutation,
+  useCreateActiveStorageMutation,
+  useCreateActiveMessagingConfigurationMutation,
+  useGetMessagingConfigurationDetailsQuery,
+  useCreateMessagingConfigurationMutation,
+  useCreateMessagingConfigurationSecretsMutation,
+  useGetConfigurationSettingsQuery,
 } = privacyRequestApi;

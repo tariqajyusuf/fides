@@ -3,6 +3,7 @@ import { Heading, VStack } from "@fidesui/react";
 import { useRouter } from "next/router";
 import React from "react";
 
+import { useFeatures } from "~/features/common/features";
 import { resolveZoneLink } from "~/features/common/nav/zone-config";
 
 import { useNav } from "./hooks";
@@ -11,6 +12,7 @@ import { NavSideBarLink } from "./NavLink";
 export const NavSideBar = () => {
   const router = useRouter();
   const nav = useNav({ path: router.pathname });
+  const features = useFeatures();
 
   // Don't render the sidebar if no group is active or if the group only has one link.
   if (!nav.active || nav.active.children.length <= 1) {
@@ -25,11 +27,16 @@ export const NavSideBar = () => {
           // We still need to handle cross-zone links.
           const { href, isActive } = resolveZoneLink({ href: path, router });
 
-          return (
-            <NavSideBarLink key={title} href={href} isActive={isActive}>
-              {title}
-            </NavSideBarLink>
-          );
+          if (
+            href === "/privacy-requests/configure" &&
+            !features.flags.privacyRequestsConfiguration
+          ) {
+            return null;
+          } return (
+              <NavSideBarLink key={title} href={href} isActive={isActive}>
+                {title}
+              </NavSideBarLink>
+            );
         })}
       </NavList>
     </VStack>
