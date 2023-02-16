@@ -1,0 +1,105 @@
+saas_config:
+  fides_key: <instance_fides_key>
+  name: AirCall SaaS Config
+  type: aircall
+  description: A sample schema representing the AirCall connector for Fides
+  version: 0.1.0
+
+  connector_params:
+    - name: domain
+      default_value: api.aircall.io
+    - name: api_key
+
+  client_config:
+    protocol: https
+    host: <domain>
+    # authentication:
+    #   strategy: no_authentication
+    #   configuration: {}
+    authentication:
+      strategy: api_key
+      configuration:
+        headers:
+          - name: Authorization
+            value: Basic <api_key>  
+
+  test_request:
+    method: GET
+    path: /v1/contacts
+    headers:
+      - name: Authorization
+        value: Basic <api_key>
+    param_values:
+      - name: api_key
+        connector_param: api_key
+
+  endpoints:
+    - name: contact
+      requests:
+        read:
+          method: GET
+          path: /v1/contacts/search
+          headers:
+            - name: Authorization
+              value: Basic <api_key>
+          query_params:
+            - name: email
+              value: <email>
+          data_path: contacts
+          param_values:
+            - name: api_key
+              connector_param: api_key
+            - name: email
+              identity: email
+        update:
+          method: POST
+          path: /v1/contacts/<contact_id>
+          body: |
+            {
+              <masked_object_fields>
+            }
+          param_values:
+            - name: contact_id
+              references:
+                - dataset: <instance_fides_key>
+                  field: contact.id
+                  direction: from
+        delete:
+          method: DELETE
+          path: /v1/users/<contact_id>
+          param_values:
+            - name: contact_id
+              references:
+                - dataset: <instance_fides_key>
+                  field: contact.id
+                  direction: from
+    - name: call
+      requests:
+        read:
+          method: GET
+          path: /v1/calls/search
+          headers:
+            - name: Authorization
+              value: Basic <api_key>
+          query_params:
+            - name: phone_number
+              value: <contact_phone_numbers_value>
+          param_values:
+            - name: email
+              identity: email
+            - name: api_key
+              connector_param: api_key
+            - name: contact_phone_numbers_value
+              references:
+                - dataset: <instance_fides_key>
+                  field: contact.phone_numbers.value
+                  direction: from
+        delete:
+          method: DELETE
+          path: '/v1/calls/:id/recording'
+          headers:
+            - name: Authorization
+              value: Basic <api_key>
+          param_values:
+            - name: api_key
+              connector_param: api_key
