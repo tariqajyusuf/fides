@@ -31,6 +31,16 @@ const Fides = {
   gtm,
   meta,
   shopify,
+
+  // Dumping these in here for testing only.
+  utils: {
+    config,
+    context,
+    defaults,
+    makeDefaults,
+    getConsentContext,
+    getConsentCookie,
+  },
 };
 
 declare global {
