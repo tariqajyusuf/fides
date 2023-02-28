@@ -1,0 +1,76 @@
+saas_config:
+  fides_key: <instance_fides_key>
+  name: Unbounce SaaS Config
+  type: unbounce
+  description: A sample schema representing the Unbounce connector for Fides
+  version: 0.1.0
+
+  connector_params:
+    - name: domain
+    - name: api_key
+    - name: page_id
+    - name: pwd
+
+  client_config:
+    protocol: https
+    host: <domain>
+    authentication:
+      strategy: basic
+      configuration:
+        username: <api_key>
+        password: <pwd>
+
+  test_request:
+    method: GET
+    path: /pages
+    headers:
+      - name: Accept
+        value: "*/*"
+
+  endpoints:
+    - name: page_leads
+      requests:
+        read:
+          method: GET
+          path: /pages/<page_id>/leads?secure=true
+          headers:
+            - name: Accept
+              value: "*/*"
+          param_values:
+            - name: placeholder
+              identity: email
+            - name: page_id
+              connector_param: page_id
+    - name: lead
+      requests:
+        read:
+          method: GET
+          path: /leads/<page_leads_leads_id>
+          headers:
+            - name: Accept
+              value: "*/*"
+          param_values:
+            - name: placeholder
+              identity: email
+            - name: page_leads_leads_id
+              references:
+                - dataset: <instance_fides_key>
+                  field: page_leads.leads.id
+                  direction: from
+        delete:
+          method: DELETE
+          path: /pages/<lead_page_id>/leads/<lead_id>
+          headers:
+            - name: Accept
+              value: "*/*"
+          param_values:
+            - name: lead_page_id
+              references:
+                - dataset: <instance_fides_key>
+                  field: lead.page_id
+                  direction: from
+            - name: lead_id
+              references:
+                - dataset: <instance_fides_key>
+                  field: lead.id
+                  direction: from
