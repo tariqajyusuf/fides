@@ -1,4 +1,10 @@
-import "~/style/index.css";
-import { App } from "~/components/App";
+import habitat from "preact-habitat";
 
-export default App;
+import Widget from "./components/Widget";
+
+const _habitat = habitat(Widget);
+
+_habitat.render({
+  selector: '[data-widget-host="fides-banner"]',
+  clean: true,
+});

@@ -1,6 +1,6 @@
 {
-  "name": "{{ name }}",
-  "short_name": "{{ name }}",
+  "name": "Fides Consent Banner",
+  "short_name": "Fides",
   "start_url": "/",
   "display": "standalone",
   "orientation": "portrait",
