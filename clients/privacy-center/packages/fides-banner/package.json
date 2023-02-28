@@ -4,14 +4,12 @@
   "description": "Fides consent cookie banner",
   "license": "Apache-2.0",
   "source": "src/index.ts",
-  "main": "dist/index.js",
-  "module": "dist/index.module.js",
-  "umd:main": "dist/index.umd.js",
-  "types": "dist/index.d.ts",
+  "umd:main": "dist/fides-banner.umd.js",
+  "types": "dist/fides-banner.d.ts",
+  "type": "module",
   "scripts": {
     "dev": "preact watch",
-    "build": "NODE_ENV=production rollup -c",
-    "build:dev": "NODE_ENV=development rollup -c"
+    "build": "microbundle build --css=inline --format=umd"
   },
   "repository": {
     "type": "git",
@@ -25,16 +23,10 @@
   },
   "devDependencies": {
     "@fidesui/config": "^0.0.3",
-    "@rollup/plugin-alias": "^4.0.3",
-    "@rollup/plugin-json": "^5.0.2",
-    "@rollup/plugin-node-resolve": "^15.0.1",
     "eslint-config-preact": "^1.1.3",
     "lint-staged": "^13.0.3",
+    "microbundle": "^0.15.1",
     "preact-cli": "^3.0.0",
-    "rollup": "^2.67.0",
-    "rollup-plugin-copy": "^3.4.0",
-    "rollup-plugin-dts": "^4.1.0",
-    "rollup-plugin-esbuild": "^4.8.2",
     "typescript": "^4.5.5"
   },
   "lint-staged": {

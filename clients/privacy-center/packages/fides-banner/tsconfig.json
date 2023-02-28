@@ -4,6 +4,8 @@
     "skipLibCheck": true,
     "jsx": "react-jsx",
     "jsxImportSource": "preact",
+    "module": "ESNext",
+    "target": "ESNext",
 
     "baseUrl": ".",
     "paths": {
@@ -12,6 +14,11 @@
       "react-dom": ["./node_modules/preact/compat/"]
     }
   },
-  "include": ["**/*.ts", "**/*.tsx", "**/*.d.ts"],
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    "**/*.d.ts",
+    "node_modules/microbundle/index.d.ts"
+  ],
   "exclude": ["node_modules", "dist", "build"]
 }
