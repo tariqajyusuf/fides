@@ -1,6 +1,6 @@
 import habitat from "preact-habitat";
 
-import Widget from "./components/Widget";
+import { Widget } from "./components/Widget";
 
 const _habitat = habitat(Widget);
 

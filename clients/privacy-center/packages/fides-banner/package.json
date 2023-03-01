@@ -9,7 +9,7 @@
   "type": "module",
   "scripts": {
     "dev": "preact watch",
-    "build": "microbundle build --format=umd",
+    "build": "microbundle build --format=umd --alias react=preact/compat",
     "postbuild": "cp dist/fides-banner.js ../../public/"
   },
   "repository": {
