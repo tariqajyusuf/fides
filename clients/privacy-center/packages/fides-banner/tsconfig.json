@@ -3,7 +3,11 @@
   "compilerOptions": {
     "skipLibCheck": true,
     "jsx": "react-jsx",
+    "jsxFactory": "",
+    // https://github.com/developit/microbundle/issues/857#issuecomment-884939726
+    "jsxFragmentFactory": "",
     "jsxImportSource": "preact",
+
     "module": "ESNext",
     "target": "ESNext",
 
