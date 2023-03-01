@@ -9,7 +9,7 @@
   "type": "module",
   "scripts": {
     "dev": "preact watch",
-    "build": "microbundle build --css=inline --format=umd"
+    "build": "microbundle build --format=umd"
   },
   "repository": {
     "type": "git",

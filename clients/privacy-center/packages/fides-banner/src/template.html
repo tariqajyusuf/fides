@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title><% preact.title %></title>
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <style>
+      main {
+        background-color: lightgray;
+      }
+
+      #fides-banner {
+        border: 2px dashed green;
+        border-radius: 1rem;
+      }
+    </style>
+    <% preact.headEnd %>
+  </head>
+
+  <body>
+    <main>
+      <h1>Widget preview</h1>
+      <p>This would be the main content of the page.</p>
+      <p>The widget container element has a border applied to it.</p>
+    </main>
+
+    <div id="fides-banner">
+      <script type="text/props">
+        {
+          "title": "Configurable title"
+        }
+      </script>
+    </div>
+    <% preact.bodyEnd %>
+  </body>
+</html>

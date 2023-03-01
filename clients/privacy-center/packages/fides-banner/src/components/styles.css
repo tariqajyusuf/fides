@@ -1,5 +1,4 @@
-/* Boilerplate */
-#fides-banner-widget {
+.fidesBannerWidget {
 	font-family: 'Helvetica Neue', arial, sans-serif;
 	font-weight: 400;
 	-webkit-font-smoothing: antialiased;
@@ -7,5 +6,5 @@
 
 	color-scheme: light dark;
 	color: #444;
-	background: #fafafa;
+	background: hotpink;
 }
