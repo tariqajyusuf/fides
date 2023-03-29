@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Dict, List, Optional, Tuple, Union
 
 from fastapi import Depends, HTTPException, Security
@@ -38,9 +39,12 @@ from fides.api.ops.models.messaging import get_messaging_method
 from fides.api.ops.models.privacy_request import (
     Consent,
     ConsentRequest,
+    PrivacyRequest,
+    PrivacyRequestStatus,
     ProvidedIdentity,
     ProvidedIdentityType,
 )
+from fides.api.ops.models.policy import Policy
 from fides.api.ops.schemas.messaging.messaging import MessagingMethod
 from fides.api.ops.schemas.privacy_request import BulkPostPrivacyRequests
 from fides.api.ops.schemas.privacy_request import Consent as ConsentSchema
@@ -94,7 +98,22 @@ def create_consent_request(
         identity_data=data,
     )
 
+    consent_policy = Policy.get_by(
+        db=db,
+        field="key",
+        value="default_consent_policy",
+    )
+    privacy_request = PrivacyRequest.create(
+        db=db,
+        data={
+            "client_id": consent_policy.client_id,
+            "policy_id": consent_policy.id,
+            "requested_at": datetime.utcnow(),
+            "status": PrivacyRequestStatus.identity_unverified.value,
+        },
+    )
     consent_request_data = {
+        "privacy_request_id": privacy_request.id,
         "provided_identity_id": identity.id,
     }
     consent_request = ConsentRequest.create(db, data=consent_request_data)
@@ -108,6 +127,7 @@ def create_consent_request(
                 status_code=HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Error sending the verification code message: {str(exc)}",
             )
+
     return ConsentRequestResponse(
         identity=data,
         consent_request_id=consent_request.id,
