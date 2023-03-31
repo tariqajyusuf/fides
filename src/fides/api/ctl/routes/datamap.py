@@ -31,6 +31,7 @@ API_EXTRA_COLUMNS = {
     "system.description": "Description of the System",
     "system.ingress": "Related Systems which receive data to this System",
     "system.egress": "Related Systems which send data to this System",
+    "system.data_steward": "Data Steward",
 }
 
 DEPRECATED_COLUMNS = {
@@ -135,10 +136,20 @@ async def export_datamap(
             raise not_found_error
         server_resource_dict = {"organization": [organization]}
 
+        def get_resource_dict(resource_type: str, resource: Any) -> dict[Any, Any]:
+            if resource_type != "system":
+                return resource.__dict__
+
+            system_managers = ", ".join(resource.users)
+            resource_dict = resource.__dict__
+            resource_dict["system_managers"] = system_managers
+            return resource_dict
+
         for resource_type in ["system", "dataset", "data_subject", "data_use"]:
             server_resources = await list_resource(sql_model_map[resource_type], db)
+
             filtered_server_resources = [
-                parse_dict(resource_type, resource.__dict__, from_server=True)
+                parse_dict(resource_type, get_resource_dict(resource_type, resource), from_server=True)
                 for resource in server_resources
                 if resource.organization_fides_key == organization_fides_key
             ]
