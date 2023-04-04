@@ -28,6 +28,9 @@ const CODEC: Types.CookieCodecConfig<string, string> = {
   encodeValue: encodeURIComponent,
 };
 
+// how to separate banner from PC and share code
+// -side effect of admin-ui
+
 export const makeDefaults = ({
   config,
   context,
