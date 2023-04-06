@@ -65,6 +65,7 @@ PRIVACY_NOTICE_DETAIL = "/privacy-notice/{privacy_notice_id}"
 
 # Privacy request URLs
 PRIVACY_REQUESTS = "/privacy-request"
+PRIVACY_REQUEST_REPORTING = "/privacy-request-reporting"
 PRIVACY_REQUEST_APPROVE = "/privacy-request/administrate/approve"
 PRIVACY_REQUEST_AUTHENTICATED = "/privacy-request/authenticated"
 PRIVACY_REQUEST_BULK_RETRY = "/privacy-request/bulk/retry"

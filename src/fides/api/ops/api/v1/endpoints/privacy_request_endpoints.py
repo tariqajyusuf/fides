@@ -15,9 +15,9 @@ from fastapi_pagination.ext.sqlalchemy import paginate
 from loguru import logger
 from pydantic import ValidationError as PydanticValidationError
 from pydantic import conlist
-from sqlalchemy import cast, column, null
-from sqlalchemy.orm import Query, Session
-from sqlalchemy.sql.expression import nullslast
+from sqlalchemy import JSON, String, cast, column, distinct, func, literal, null
+from sqlalchemy.orm import Query, Session, aliased
+from sqlalchemy.sql.expression import and_, case, nullslast, select
 from starlette.responses import StreamingResponse
 from starlette.status import (
     HTTP_200_OK,
@@ -54,6 +54,7 @@ from fides.api.ops.api.v1.urn_registry import (
     PRIVACY_REQUEST_MANUAL_ERASURE,
     PRIVACY_REQUEST_MANUAL_INPUT,
     PRIVACY_REQUEST_NOTIFICATIONS,
+    PRIVACY_REQUEST_REPORTING,
     PRIVACY_REQUEST_RESUME,
     PRIVACY_REQUEST_RESUME_FROM_REQUIRES_INPUT,
     PRIVACY_REQUEST_RETRY,
@@ -75,6 +76,7 @@ from fides.api.ops.common_exceptions import (
     TraversalError,
     ValidationError,
 )
+from fides.api.ops.db.base_class import JSONTypeOverride
 from fides.api.ops.graph.config import CollectionAddress
 from fides.api.ops.graph.graph import DatasetGraph, Node
 from fides.api.ops.graph.traversal import Traversal
@@ -116,6 +118,7 @@ from fides.api.ops.schemas.privacy_request import (
     ManualWebhookData,
     PrivacyRequestCreate,
     PrivacyRequestNotificationInfo,
+    PrivacyRequestReportResponse,
     PrivacyRequestResponse,
     PrivacyRequestVerboseResponse,
     ReviewPrivacyRequestIds,
@@ -150,6 +153,7 @@ from fides.core.config import CONFIG
 from fides.core.config.config_proxy import ConfigProxy
 from fides.lib.models.audit_log import AuditLog, AuditLogAction
 from fides.lib.models.client import ClientDetail
+from fides.lib.models.fides_user import FidesUser
 
 router = APIRouter(tags=["Privacy Requests"], prefix=V1_URL_PREFIX)
 
@@ -1753,3 +1757,60 @@ def _process_privacy_request_restart(
     )
 
     return privacy_request
+
+
+@router.get(
+    PRIVACY_REQUEST_REPORTING,
+    # dependencies=[Security(verify_oauth_client, scopes=[PRIVACY_REQUEST_READ])],
+    response_model=Page[PrivacyRequestReportResponse],
+)
+def get_privacy_request_reporting(
+    *,
+    db: Session = Depends(deps.get_db),
+    params: Params = Depends(),
+    request_type: str = "consent",
+) -> AbstractPage[PrivacyRequest]:
+    """Return requests of a specific type for more detailed reporting"""
+    provided_identity_primary = aliased(ProvidedIdentity)
+    provided_identity_secondary = aliased(ProvidedIdentity)
+
+    res = (
+        db.query(
+            PrivacyRequest.id,
+            func.max(PrivacyRequest.created_at).label("request_timestamp"),
+            func.max(PrivacyRequest.status).label("status"),
+            func.max(Rule.action_type).label("request_type"),
+            func.max(FidesUser.username).label("approver_id"),
+            func.jsonb(PrivacyRequest.consent_preferences).label("privacy_notices"),
+            func.array_agg(distinct(provided_identity_primary.encrypted_value)).label(
+                "user_id"
+            ),
+            func.array_agg(distinct(provided_identity_secondary.encrypted_value)).label(
+                "secondary_user_ids"
+            ),
+            func.array_agg(ExecutionLog.dataset_name.distinct()).label(
+                "affected_systems"
+            ),
+        )
+        .join(Policy, PrivacyRequest.policy_id == Policy.id)
+        .join(Rule, Rule.policy_id == Policy.id)
+        .outerjoin(FidesUser, FidesUser.id == PrivacyRequest.reviewed_by)
+        .outerjoin(ExecutionLog, ExecutionLog.privacy_request_id == PrivacyRequest.id)
+        .outerjoin(
+            provided_identity_primary,
+            (PrivacyRequest.id == provided_identity_primary.privacy_request_id)
+            & (provided_identity_primary.field_name == "email"),
+        )
+        .outerjoin(
+            provided_identity_secondary,
+            (PrivacyRequest.id == provided_identity_secondary.privacy_request_id)
+            & (provided_identity_secondary.field_name != "email"),
+        )
+        .filter(Rule.action_type == request_type, ExecutionLog.status == "complete")
+        .group_by(PrivacyRequest.id)
+        .yield_per(1000)
+    )
+    return paginate(
+        res,
+        params,
+    )

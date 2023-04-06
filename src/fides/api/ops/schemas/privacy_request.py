@@ -273,3 +273,19 @@ class ConsentRequestVerification(BaseSchema):
     data_use: str
     data_use_description: Optional[str] = None
     opt_in: bool
+
+
+class PrivacyRequestReportResponse(BaseSchema):
+    id: str = Field(alias="request_id")
+    user_id: Optional[List[Optional[Dict]]]
+    secondary_user_ids: Optional[List[Optional[Dict]]]
+    request_timestamp: datetime
+    # request_origin: str # Add field
+    status: PrivacyRequestStatus
+    request_type: ActionType
+    approver_id: Optional[str]
+    privacy_notices: List
+    affected_systems: List[str]
+
+    class Config:
+        allow_population_by_field_name = True
