@@ -1,0 +1,83 @@
+dataset:
+    - fides_key: <instance_fides_key>
+      name: SparkPost Dataset
+      description: A sample dataset representing the sparkpost connector for Fides
+      collections:
+        - name: all_recipient
+          fields:
+            - name: id
+              data_categories: [system.operations]
+              fidesops_meta:
+                data_type: string
+                primary_key: True
+            - name: name
+              data_categories: [system.operations]
+              fidesops_meta:
+                data_type: string
+            - name: description
+              data_categories: [system.operations]
+              fidesops_meta:
+                data_type: string
+            - name: attributes
+              fidesops_meta:
+                data_type: object
+              fields:
+                - name: internal_id
+                  data_categories: [system.operations]
+                  fidesops_meta:
+                    data_type: integer
+                - name: list_group_id
+                  data_categories: [system.operations]
+                  fidesops_meta:
+                    data_type: integer
+            - name: total_accepted_recipients
+              data_categories: [system.operations]
+              fidesops_meta:
+                data_type: integer
+        - name: recipient
+          fields:
+            - name: address
+              fidesops_meta:
+                data_type: object
+              fields:
+                - name: email
+                  data_categories: [system.operations]
+                  fidesops_meta:
+                    data_type: string
+                    primary_key: True
+                - name: name
+                  data_categories: [system.operations]
+                  fidesops_meta:
+                    data_type: string
+            - name: return_path
+              data_categories: [system.operations]
+              fidesops_meta:
+                data_type: string
+            - name: tags
+              data_categories: [system.operations]
+              fidesops_meta:
+                data_type: 'string[]'
+            - name: metadata
+              fidesops_meta:
+                data_type: object
+              fields:
+                - name: age
+                  data_categories: [system.operations]
+                  fidesops_meta:
+                    data_type: string
+                - name: place
+                  data_categories: [system.operations]
+                  fidesops_meta:
+                    data_type: string
+            - name: substitution_data
+              fidesops_meta:
+                data_type: object
+              fields:
+                - name: favorite_color
+                  data_categories: [system.operations]
+                  fidesops_meta:
+                    data_type: string
+                - name: job
+                  data_categories: [system.operations]
+                  fidesops_meta:
+                    data_type: string
