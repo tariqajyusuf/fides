@@ -1,10 +1,16 @@
 {
   "extends": "@fidesui/config/tsconfig",
   "compilerOptions": {
-    "baseUrl": ".",
+    "skipLibCheck": true,
+    "baseUrl": "./",
     "paths": {
-      "~/*": ["src/*"]
-    }
+      "~/*": ["src/*"],
+      "react": ["./node_modules/preact/compat/"],
+      "react-dom": ["./node_modules/preact/compat/"]
+    },
+    "jsx": "react",
+    "jsxFactory": "h",
+    "jsxFragmentFactory": "Fragment"
   },
   "include": ["**/*.ts", "**/*.d.ts"],
   "exclude": ["node_modules", "dist"]

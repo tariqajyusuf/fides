@@ -1,6 +1,17 @@
-import {Component, render, VNode} from 'preact';
+import { h, Component, render, VNode } from 'preact';
 import {html} from 'htm/preact'
 import {CookieKeyConsent, hasSavedConsentCookie, setConsentCookieAcceptAll, setConsentCookieRejectAll,} from "./cookie";
+
+
+// todo- axios integration
+//   axios.get(url)
+//       .then(function (response) {
+//         return response;
+//       })
+//       .catch(function (error) {
+//         // handle error
+//         console.log(`Error fetching ${url}: ${error}`);
+//       })
 
 
 export type ConsentBannerOptions = {
@@ -241,13 +252,149 @@ const isBannerEnabledForLocation = (location?: UserGeolocation): boolean => {
   return true;
 }
 
+const defaultStyle = `:root {
+    --fides-consent-banner-font-family: inherit;
+    --fides-consent-banner-font-size: 16px;
+    --fides-consent-banner-background: #fff;
+    --fides-consent-banner-text-color: #24292f;
+    --fides-consent-banner-padding: 0.75em 2em 1em;
 
+    --fides-consent-banner-button-background: #eee;
+    --fides-consent-banner-button-text-color: #24292f;
+    --fides-consent-banner-button-hover-background: #ccc;
+    --fides-consent-banner-button-border-radius: 4px;
+    --fides-consent-banner-button-padding: 1em 1.5em;
+
+    --fides-consent-banner-button-primary-background: #464b83;
+    --fides-consent-banner-button-primary-text-color: #fff;
+    --fides-consent-banner-button-primary-hover-background: #3f4375;
+
+    --fides-consent-banner-button-secondary-background: var(--fides-consent-banner-button-background);
+    --fides-consent-banner-button-secondary-text-color: var(--fides-consent-banner-button-text-color);
+    --fides-consent-banner-button-secondary-hover-background: var(--fides-consent-banner-button-hover-background);
+
+    --fides-consent-banner-button-tertiary-background: var(--fides-consent-banner-button-background);
+    --fides-consent-banner-button-tertiary-text-color: var(--fides-consent-banner-button-text-color);
+    --fides-consent-banner-button-tertiary-hover-background: var(--fides-consent-banner-button-hover-background);
+}
+
+div#fides-consent-banner {
+    font-family: var(--fides-consent-banner-font-family);
+    font-size: var(--fides-consent-banner-font-size);
+    background: var(--fides-consent-banner-background);
+    color: var(--fides-consent-banner-text-color);
+    box-sizing: border-box;
+    padding: var(--fides-consent-banner-padding);
+
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    transition: transform 1s;
+}
+
+div#fides-consent-banner.fides-consent-banner-bottom {
+    position: fixed;
+    z-index: 1;
+    width: 100%;
+    bottom: 0;
+    left: 0;
+    transform: translateY(0%);
+}
+
+div#fides-consent-banner.fides-consent-banner-bottom.fides-consent-banner-hidden {
+    transform: translateY(100%);
+}
+
+div#fides-consent-banner.fides-consent-banner-top {
+    position: fixed;
+    z-index: 1;
+    width: 100%;
+    top: 0;
+    left: 0;
+    transform: translateY(0%);
+}
+
+div#fides-consent-banner.fides-consent-banner-top.fides-consent-banner-hidden {
+    transform: translateY(-100%);
+}
+
+
+div#fides-consent-banner-description {
+    margin-top: 0.5em;
+    margin-right: 2em;
+    min-width: 33%;
+    flex: 1;
+}
+
+div#fides-consent-banner-buttons {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+}
+
+button.fides-consent-banner-button {
+    display: inline-block;
+    flex: auto;
+    cursor: pointer;
+    text-align: center;
+    margin: 0;
+    margin-top: 0.25em;
+    margin-right: 0.25em;
+    padding: var(--fides-consent-banner-button-padding);
+    background: var(--fides-consent-banner-button-background);
+    color: var(--fides-consent-banner-button-text-color);
+    border: none;
+    border-radius: var(--fides-consent-banner-button-border-radius);
+
+    font-family: inherit;
+    font-size: 100%;
+    line-height: 1.15;
+    text-decoration: none;
+}
+
+button.fides-consent-banner-button:hover {
+    background: var(--fides-consent-banner-button-hover-background);
+}
+
+button.fides-consent-banner-button.fides-consent-banner-button-primary {
+    background: var(--fides-consent-banner-button-primary-background);
+    color: var(--fides-consent-banner-button-primary-text-color);
+}
+
+button.fides-consent-banner-button.fides-consent-banner-button-primary:hover {
+    background: var(--fides-consent-banner-button-primary-hover-background);
+}
+
+button.fides-consent-banner-button.fides-consent-banner-button-secondary {
+    background: var(--fides-consent-banner-button-secondary-background);
+    color: var(--fides-consent-banner-button-secondary-text-color);
+}
+
+button.fides-consent-banner-button.fides-consent-banner-button-secondary:hover {
+    background: var(--fides-consent-banner-button-secondary-hover-background);
+}
+
+button.fides-consent-banner-button.fides-consent-banner-button-tertiary {
+    background: var(--fides-consent-banner-button-tertiary-background);
+    color: var(--fides-consent-banner-button-tertiary-text-color);
+}
+
+button.fides-consent-banner-button.fides-consent-banner-button-tertiary:hover {
+    background: var(--fides-consent-banner-button-tertiary-hover-background);
+}`
 
 
 /**
  * Builds a 'style' element containing the CSS styles for the consent banner
  */
-const buildStyles = (): VNode => html`<link rel="stylesheet" href="banner.css">`;
+const BuildStyles = () => {
+  return (<style>
+    {defaultStyle}
+  </style>)
+};
+
 
 interface BannerProps {
   defaults: CookieKeyConsent;
@@ -263,10 +410,12 @@ class Banner extends Component<BannerProps, BannerState> {
   /**
    * Builds a button DOM element with the given id, class name, and text label
    */
-  static buildButton = (id: string, className: string, label?: string, onClick?: () => void): VNode =>
-      html`<button id="${id}" class="fides-consent-banner-button ${className}" onClick="${onClick ? onClick() : null}">
-  ${label || ""}
-    </button>`;
+  static buildButton = (id: string, className: string, label?: string, onClick?: () => void) => {
+    return(<button id={id} class={`"fides-consent-banner-button ${className}"`} onClick={onClick ? onClick : undefined}>
+      ${label || ""}
+    </button>);
+  }
+
 
   private readonly defaults: CookieKeyConsent;
 
@@ -284,53 +433,55 @@ class Banner extends Component<BannerProps, BannerState> {
    * Builds the DOM elements for the consent banner (container, buttons, etc.) and
    * return a single div that can be added to the body.
    */
-  buildBanner = (defaults: CookieKeyConsent): VNode => {
+  buildBanner = (defaults: CookieKeyConsent) => {
     const options: ConsentBannerOptions = getBannerOptions();
     // TODO: support option to specify top/bottom
 
-    return html`<div id="fides-consent-banner" class="fides-consent-banner fides-consent-banner-bottom ${this.state.isShown ? '' : 'fides-consent-banner-hidden'}">
-  <div id=fides-consent-banner-description" class="fides-consent-banner-description">
-    ${options.labels?.bannerDescription || ""}
-  </div>
-  <div id="fides-consent-banner-buttons" class="fides-consent-banner-buttons">
-    ${Banner.buildButton(
-        "fides-consent-banner-button-tertiary",
-        "fides-consent-banner-button-tertiary",
-        options.labels?.tertiaryButton,
-        navigateToPrivacyCenter,
-    )}
-    ${Banner.buildButton(
-        "fides-consent-banner-button-secondary",
-        "fides-consent-banner-button-secondary",
-        options.labels?.secondaryButton,
-        () => {
-          setConsentCookieRejectAll(defaults);
-          this.setState({ isShown: false })
-          // TODO: save to Fides consent request API
-          // eslint-disable-next-line no-console
-          console.error("Could not save consent record to Fides API, not implemented!");
-        },
-    )}
-    ${Banner.buildButton(
-        "fides-consent-banner-button-primary",
-        "fides-consent-banner-button-primary",
-        options.labels?.primaryButton,
-        () => {
-          setConsentCookieAcceptAll(defaults);
-          this.setState({ isShown: false })
-          // TODO: save to Fides consent request API
-          // eslint-disable-next-line no-console
-          console.error("Could not save consent record to Fides API, not implemented!");
-        },
-    )}
-  </div>
-</div>`;
+    return (
+        <div id="fides-consent-banner" class="fides-consent-banner fides-consent-banner-bottom">
+          <div id="fides-consent-banner-description" class="fides-consent-banner-description">
+            ${options.labels?.bannerDescription || ""}
+          </div>
+          <div id="fides-consent-banner-buttons" class="fides-consent-banner-buttons">
+            ${Banner.buildButton(
+                "fides-consent-banner-button-tertiary",
+                "fides-consent-banner-button-tertiary",
+                options.labels?.tertiaryButton,
+                navigateToPrivacyCenter,
+            )}
+            ${Banner.buildButton(
+                "fides-consent-banner-button-secondary",
+                "fides-consent-banner-button-secondary",
+                options.labels?.secondaryButton,
+                () => {
+                  setConsentCookieRejectAll(defaults);
+                  this.setState({ isShown: false })
+                  // TODO: save to Fides consent request API
+                  // eslint-disable-next-line no-console
+                  console.error("Could not save consent record to Fides API, not implemented!");
+                },
+            )}
+            ${Banner.buildButton(
+                "fides-consent-banner-button-primary",
+                "fides-consent-banner-button-primary",
+                options.labels?.primaryButton,
+                () => {
+                  setConsentCookieAcceptAll(defaults);
+                  this.setState({ isShown: false })
+                  // TODO: save to Fides consent request API
+                  // eslint-disable-next-line no-console
+                  console.error("Could not save consent record to Fides API, not implemented!");
+                },
+            )}
+          </div>
+        </div>);
   };
 
   render(): VNode | null {
    let bannerBuild = null
     // If the user provides any extra options, override the defaults
     try {
+     console.log("meow")
       debugLog("Initializing Fides consent banner with consent cookie defaults...", this.defaults);
       if (this.extraOptions !== undefined) {
         if (typeof this.extraOptions !== "object") {
@@ -372,7 +523,8 @@ class Banner extends Component<BannerProps, BannerState> {
       //   debugLog("Fides consent banner geolocation is not enabled. Continuing...");
       // }
       // Show the banner after a small delay, to allow animation to occur
-      setTimeout(() => this.setState({ isShown: true }), 100);
+      // fixme- timeout causes infinite loop- use hooks instead
+      // setTimeout(() => this.setState({ isShown: true }), 100);
 
       debugLog("Fides consent banner should be shown! Building banner elements & styles...");
       bannerBuild = this.buildBanner(this.defaults);
@@ -390,20 +542,19 @@ class Banner extends Component<BannerProps, BannerState> {
  * (see the type definition of ConsentBannerOptions for what options are available)
  */
 export const InitBanner = async(defaults: CookieKeyConsent, extraOptions?: ConsentBannerOptions): Promise<void> => {
-  const styles = buildStyles();
-
+  render(<div>hello meow</div>, document.body)
   debugLog("Adding Fides consent banner CSS & HTML into the DOM...");
-  render(styles, document.head);
+  render(BuildStyles(), document.head);
+
   try {
-    const banner = new Banner({defaults, extraOptions})
-    render(banner, document.body);
-    console.log(banner)
+    render(<Banner defaults={defaults} extraOptions={extraOptions}/>, document.body);
   } catch (e) {
     debugLog(e)
   }
 
   debugLog("Fides consent banner is now showing!");
 };
+
 
 
 

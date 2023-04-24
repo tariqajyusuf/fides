@@ -102,5 +102,5 @@ export default [
         file: `dist/${name}.d.ts`,
       },
     ],
-  },
+  }
 ];

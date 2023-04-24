@@ -8,3 +8,4 @@ export * from "./consent-config";
 export * from "./consent-context";
 export * from "./consent-value";
 export * from "./cookie";
+export * from "./banner.css"
