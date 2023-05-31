@@ -1,5 +1,6 @@
 import { h } from "preact";
-import { useMemo, useState } from "preact/hooks";
+import { useMemo, useRef, useState } from "preact/hooks";
+import { A11yDialog } from "react-a11y-dialog";
 import {
   ButtonType,
   ExperienceConfig,
@@ -30,6 +31,7 @@ const ConsentModal = ({
   onAcceptAll: () => void;
   onRejectAll: () => void;
 }) => {
+  const dialog = useRef<any>();
   const initialEnabledNoticeIds = useMemo(
     () =>
       Object.keys(window.Fides.consent).filter(
@@ -59,6 +61,18 @@ const ConsentModal = ({
 
   return (
     <div>
+      {/* just for testing around */}
+      <A11yDialog
+        id="my-accessible-dialog"
+        dialogRef={(instance) => {
+          if (dialog.current) {
+            dialog.current = instance;
+          }
+        }}
+        title="The dialog title"
+      >
+        <p>Content</p>
+      </A11yDialog>
       <div
         data-testid="consent-modal"
         id="fides-consent-modal"

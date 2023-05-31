@@ -6,6 +6,7 @@ import esbuild from "rollup-plugin-esbuild";
 import filesize from "rollup-plugin-filesize";
 import nodeResolve from "@rollup/plugin-node-resolve";
 import css from "rollup-plugin-import-css";
+import commonjs from "@rollup/plugin-commonjs";
 
 const name = "fides";
 const isDev = process.env.NODE_ENV === "development";
@@ -20,6 +21,7 @@ const preactAliases = {
     { find: "react/jsx-runtime", replacement: "preact/jsx-runtime" },
   ],
 };
+const commonJsConfig = {};
 
 /**
  * @type {import('rollup').RollupOptions}
@@ -29,6 +31,7 @@ export default [
     input: `src/${name}.ts`,
     plugins: [
       alias(preactAliases),
+      commonjs(commonJsConfig),
       nodeResolve(),
       css(),
       esbuild({
@@ -92,7 +95,13 @@ export default [
   },
   {
     input: `src/${name}.ts`,
-    plugins: [alias(preactAliases), nodeResolve(), css(), esbuild()],
+    plugins: [
+      alias(preactAliases),
+      commonjs(commonJsConfig),
+      nodeResolve(),
+      css(),
+      esbuild(),
+    ],
     output: [
       {
         // Compatible with ES module imports. Apps in this repo may be able to share the code.
