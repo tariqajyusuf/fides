@@ -7,6 +7,8 @@ import filesize from "rollup-plugin-filesize";
 import nodeResolve from "@rollup/plugin-node-resolve";
 import css from "rollup-plugin-import-css";
 import commonjs from "@rollup/plugin-commonjs";
+import { visualizer } from "rollup-plugin-visualizer";
+import stripPropTypes from "rollup-plugin-strip-prop-types";
 
 const name = "fides";
 const isDev = process.env.NODE_ENV === "development";
@@ -31,8 +33,9 @@ export default [
     input: `src/${name}.ts`,
     plugins: [
       alias(preactAliases),
-      commonjs(commonJsConfig),
+      stripPropTypes(),
       nodeResolve(),
+      commonjs(commonJsConfig),
       css(),
       esbuild({
         minify: !isDev,
@@ -82,6 +85,7 @@ export default [
           },
         ],
       }),
+      visualizer(),
     ],
     output: [
       {
