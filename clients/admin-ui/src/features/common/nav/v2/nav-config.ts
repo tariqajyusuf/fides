@@ -108,6 +108,16 @@ export const NAV_CONFIG: NavConfigGroup[] = [
     ],
   },
   {
+    title: "Insights",
+    routes: [
+      {
+        path: routes.INSIGHTS_ROUTE,
+        exact: true,
+        scopes: [],
+      },
+    ],
+  },
+  {
     title: "Management",
     routes: [
       {

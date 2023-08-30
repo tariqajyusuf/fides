@@ -22,3 +22,6 @@ export const TAXONOMY_ROUTE = "/taxonomy";
 export const ABOUT_ROUTE = "/management/about";
 export const CUSTOM_FIELDS_ROUTE = "/management/custom-fields";
 export const EMAIL_TEMPLATES_ROUTE = "/management/email-templates";
+
+// Insights group
+export const INSIGHTS_ROUTE = "/insights";
